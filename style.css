@@ -967,3 +967,36 @@ footer {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.sticker-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: -5px 0 13px;
+}
+
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sticker-grid button {
+  min-height: 48px;
+  font-size: 25px;
+  background: #fbf8f1;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.sticker-grid button:hover {
+  border-color: var(--rust);
+  transform: scale(1.05);
+}
+
+#clearStickers {
+  width: 100%;
+  min-height: 38px;
+  font-size: 11px;
+}

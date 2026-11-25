@@ -40,6 +40,46 @@
   };
 
   const settingIds = Object.keys(defaults);
+  const stickers = [];
+  let draggingSticker = null;
+
+  function addSticker(emoji) {
+    stickers.push({
+      emoji,
+      x: 0.5,
+      y: 0.5,
+      size: 0.12,
+    });
+    renderPreview();
+  }
+
+  function drawStickers(canvas) {
+    const ctx = canvas.getContext("2d");
+
+    stickers.forEach((sticker) => {
+      const size = Math.min(canvas.width, canvas.height) * sticker.size;
+
+      ctx.save();
+      ctx.font = `${size}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(
+        sticker.emoji,
+        sticker.x * canvas.width,
+        sticker.y * canvas.height,
+      );
+      ctx.restore();
+    });
+  }
+
+  function stickerPosition(event, canvas) {
+    const rect = canvas.getBoundingClientRect();
+
+    return {
+      x: (event.clientX - rect.left) / rect.width,
+      y: (event.clientY - rect.top) / rect.height,
+    };
+  }
 
   const imageFromCanvas = (canvas) =>
     new Promise((resolve) => {
@@ -107,35 +147,46 @@
 
   function filterString(s) {
     const presets = {
-      bw: "grayscale(1) contrast(1.12)",
-      sepia: "sepia(.9) saturate(.82)",
-      faded: "sepia(.2) saturate(.72) brightness(1.1) contrast(.82)",
-      warm: "sepia(.2) saturate(1.2) brightness(1.03)",
-      cool: "hue-rotate(14deg) saturate(.86)",
-      retro: "sepia(.32) saturate(1.28) contrast(.92)",
-      washed: "saturate(.62) brightness(1.12) contrast(.8)",
-      portra: "sepia(.12) saturate(1.18) contrast(.92) brightness(1.04)",
-      kodak: "sepia(.18) saturate(1.38) contrast(1.04)",
-      noir: "grayscale(1) contrast(1.5) brightness(.92)",
-      dream: "saturate(.82) brightness(1.13) blur(.25px)",
-      vintage: "sepia(.42) saturate(.82) contrast(.88) brightness(1.05)",
-      summer: "sepia(.16) saturate(1.48) brightness(1.08)",
-      ice: "hue-rotate(178deg) saturate(.72) brightness(1.06)",
-      matte: "saturate(.78) contrast(.86) brightness(1.08)",
+      none: "",
+      bw: "grayscale(1) contrast(1.15)",
+      sepia: "sepia(0.9) saturate(0.85)",
+      faded: "sepia(0.2) saturate(0.7) brightness(1.12) contrast(0.82)",
+      warm: "sepia(0.25) saturate(1.3) brightness(1.04)",
+      cool: "hue-rotate(14deg) saturate(0.85)",
+      retro: "sepia(0.35) saturate(1.3) contrast(0.95)",
+      washed: "saturate(0.6) brightness(1.12) contrast(0.8)",
+      portra: "sepia(0.12) saturate(1.2) contrast(0.92) brightness(1.05)",
+      kodak: "sepia(0.2) saturate(1.45) contrast(1.05)",
+      noir: "grayscale(1) contrast(1.5) brightness(0.92)",
+      dream: "saturate(0.8) brightness(1.12)",
+      vintage: "sepia(0.45) saturate(0.8) contrast(0.88)",
+      summer: "sepia(0.15) saturate(1.5) brightness(1.08)",
+      ice: "hue-rotate(180deg) saturate(0.75) brightness(1.08)",
+      matte: "saturate(0.75) contrast(0.85) brightness(1.08)",
     };
-    return `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%) ${presets[s.filter] || ""}`;
+
+    return [
+      `brightness(${s.brightness}%)`,
+      `contrast(${s.contrast}%)`,
+      `saturate(${s.saturation}%)`,
+      presets[s.filter] || "",
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   function drawFilteredPhoto(ctx, photo, x, y, w, h, s) {
     ctx.save();
 
-    ctx.filter = filterString(s);
     const zoom = (s.zoom || 100) / 100;
-    const sw = photo.width / zoom,
-      sh = photo.height / zoom;
-    const sx = (photo.width - sw) / 2,
-      sy = (photo.height - sh) / 2;
+    const sw = photo.width / zoom;
+    const sh = photo.height / zoom;
+    const sx = (photo.width - sw) / 2;
+    const sy = (photo.height - sh) / 2;
+
+    ctx.filter = filterString(s);
     ctx.drawImage(photo, sx, sy, sw, sh, x, y, w, h);
+    ctx.filter = "none";
     ctx.restore();
 
     if (s.warmth) {
@@ -148,6 +199,7 @@
       ctx.fillRect(x, y, w, h);
       ctx.restore();
     }
+
     if (s.fade > 0) {
       ctx.save();
       ctx.globalCompositeOperation = "screen";
@@ -155,6 +207,7 @@
       ctx.fillRect(x, y, w, h);
       ctx.restore();
     }
+
     if (s.vignette > 0) {
       ctx.save();
       const gradient = ctx.createRadialGradient(
@@ -173,26 +226,18 @@
     }
 
     if (s.grain > 0) {
-      // A small, low-resolution noise layer keeps mobile rendering responsive.
-
-      const gw = Math.max(80, Math.min(220, Math.round(w / 4)));
-
-      const gh = Math.max(80, Math.min(220, Math.round(h / 4)));
-
       const noise = document.createElement("canvas");
-
-      noise.width = gw;
-      noise.height = gh;
+      noise.width = 180;
+      noise.height = 180;
 
       const nctx = noise.getContext("2d");
-
-      const data = nctx.createImageData(gw, gh);
+      const data = nctx.createImageData(180, 180);
 
       for (let i = 0; i < data.data.length; i += 4) {
         const v = 100 + Math.random() * 155;
-
-        data.data[i] = data.data[i + 1] = data.data[i + 2] = v;
-
+        data.data[i] = v;
+        data.data[i + 1] = v;
+        data.data[i + 2] = v;
         data.data[i + 3] = Math.round(s.grain * 0.65);
       }
 
@@ -200,7 +245,6 @@
 
       ctx.save();
       ctx.globalCompositeOperation = "soft-light";
-
       ctx.drawImage(noise, x, y, w, h);
       ctx.restore();
     }
@@ -337,6 +381,8 @@
     if (state.format === "strip") drawStrip(canvas, state.photos, settings());
     else drawSingle(canvas, state.photos[0], settings());
 
+    drawStickers(canvas);
+
     $("previewDimensions").textContent =
       `${canvas.width} × ${canvas.height} PX`;
 
@@ -354,6 +400,7 @@
     target.height = source.height;
 
     target.getContext("2d").drawImage(source, 0, 0);
+    drawStickers(target);
   }
 
   function renderPhotoNavigation() {
@@ -639,6 +686,8 @@
           chip.dataset.filter === $("filter").value,
         ),
       );
+    stickers.length = 0;
+
     renderPreview();
   }
 
@@ -880,6 +929,58 @@
       )
         setStage(button.dataset.stage);
     });
+  });
+
+  document.querySelectorAll("[data-sticker]").forEach((button) => {
+    button.addEventListener("click", () => {
+      addSticker(button.dataset.sticker);
+    });
+  });
+
+  $("clearStickers").addEventListener("click", () => {
+    stickers.length = 0;
+    renderPreview();
+  });
+
+  const previewCanvas = $("previewCanvas");
+
+  previewCanvas.addEventListener("pointerdown", (event) => {
+    if (!stickers.length) return;
+
+    const pos = stickerPosition(event, previewCanvas);
+    const rect = previewCanvas.getBoundingClientRect();
+
+    const hit = stickers.findLastIndex((sticker) => {
+      const dx = (sticker.x - pos.x) * rect.width;
+      const dy = (sticker.y - pos.y) * rect.height;
+      return (
+        Math.hypot(dx, dy) < Math.min(rect.width, rect.height) * sticker.size
+      );
+    });
+
+    if (hit !== -1) {
+      draggingSticker = stickers[hit];
+      previewCanvas.setPointerCapture(event.pointerId);
+    }
+  });
+
+  previewCanvas.addEventListener("pointermove", (event) => {
+    if (!draggingSticker) return;
+
+    const pos = stickerPosition(event, previewCanvas);
+
+    draggingSticker.x = Math.max(0, Math.min(1, pos.x));
+    draggingSticker.y = Math.max(0, Math.min(1, pos.y));
+
+    renderPreview();
+  });
+
+  previewCanvas.addEventListener("pointerup", () => {
+    draggingSticker = null;
+  });
+
+  previewCanvas.addEventListener("pointercancel", () => {
+    draggingSticker = null;
   });
 
   document.querySelectorAll("[data-format]").forEach((button) => {
