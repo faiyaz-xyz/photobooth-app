@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eee6d5">
+  <meta name="description" content="A private, offline-ready vintage photobooth.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>Little Booth — A Retro Photobooth</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="paper-grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="wordmark" href="#" aria-label="Little Booth home">little<span>booth</span><i>™</i></a>
+    <div class="top-note">A LITTLE MOMENT, KEPT FOREVER</div>
+    <div class="top-actions"><button class="text-button" id="openMemories" type="button">Memories <span id="memoryCount">0</span></button><button class="text-button" id="installApp" type="button" hidden>Install app ↓</button><button class="text-button" id="newSessionTop" type="button">Start new session ↗</button></div>
+  </header>
+
+  <main class="shell">
+    <section class="intro">
+      <p class="eyebrow">THE DIGITAL PHOTOBOOTH</p>
+      <h1>Make a moment<br><em>of it.</em></h1>
+      <p class="intro-copy">A tiny vintage photobooth, right here in your browser.</p>
+    </section>
+
+    <nav class="steps" aria-label="Photobooth stages">
+      <button class="step active" data-stage="capture" type="button"><b>01</b> Capture</button>
+      <span class="step-line"></span>
+      <button class="step" data-stage="customize" type="button" disabled><b>02</b> Customize</button>
+      <span class="step-line"></span>
+      <button class="step" data-stage="download" type="button" disabled><b>03</b> Download</button>
+    </nav>
+
+    <section class="stage-panel" id="captureStage">
+      <div class="panel-heading">
+        <div><p class="eyebrow">STEP ONE</p><h2>Step into the booth</h2></div>
+        <span class="live-label"><i></i> YOUR CAMERA STAYS PRIVATE</span>
+      </div>
+      <div class="capture-layout">
+        <div class="camera-wrap">
+          <div class="camera-frame">
+            <video id="video" autoplay playsinline muted></video>
+            <div class="camera-placeholder" id="cameraPlaceholder">
+              <div class="camera-icon">◎</div>
+              <strong>Your booth is waiting.</strong>
+              <span>Allow camera access to get started.</span>
+            </div>
+            <div class="countdown" id="countdown" hidden></div>
+            <div class="flash" id="flash"></div>
+            <span class="camera-corner top-left"></span><span class="camera-corner top-right"></span>
+            <span class="camera-corner bottom-left"></span><span class="camera-corner bottom-right"></span>
+          </div>
+          <div class="camera-meta"><span id="cameraStatus">CAMERA NOT CONNECTED</span><span>✳ LIVE PREVIEW</span></div>
+        </div>
+        <aside class="capture-options">
+          <div class="option-block">
+            <label for="format">PHOTO FORMAT</label>
+            <div class="choice-row" id="formatChoices">
+              <button class="choice selected" data-format="single" type="button">Single photo</button>
+              <button class="choice" data-format="strip" type="button">Photo strip</button>
+            </div>
+          </div>
+          <div class="option-block" id="shotsBlock" hidden>
+            <label for="shotCount">NUMBER OF FRAMES</label>
+            <select id="shotCount"><option value="2">2 photos</option><option value="3" selected>3 photos</option><option value="4">4 photos</option></select>
+          </div>
+          <div class="option-block">
+            <label for="timer">COUNTDOWN</label>
+            <select id="timer"><option value="3">3 seconds</option><option value="5" selected>5 seconds</option><option value="10">10 seconds</option></select>
+          </div>
+          <div class="option-block">
+            <label for="cameraSelect">CAMERA</label>
+            <select id="cameraSelect"><option value="user">Front camera</option><option value="environment">Rear camera</option></select>
+          </div>
+          <button class="primary-button" id="startCamera" type="button">Enable camera <span>→</span></button>
+          <button class="shutter-button" id="captureButton" type="button" disabled><span class="shutter-inner"></span><span id="captureLabel">Take a photo</span></button>
+          <p class="micro-copy" id="captureHint">Your photos are processed on this device only.</p>
+          <p class="error-message" id="cameraError" role="status"></p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="stage-panel" id="customizeStage" hidden>
+      <div class="panel-heading">
+        <div><p class="eyebrow">STEP TWO</p><h2>Make it yours</h2></div>
+        <button class="subtle-button" id="resetEdits" type="button">Reset edits ↺</button>
+      </div>
+      <div class="studio-layout">
+        <div class="preview-column">
+          <div class="artboard"><canvas id="previewCanvas" aria-label="Customized photo preview"></canvas></div>
+          <div class="preview-caption"><span>YOUR PRINT PREVIEW</span><span id="previewDimensions">LIVE CANVAS</span></div>
+          <div class="photo-navigation" id="photoNavigation" hidden></div>
+          <div class="strip-tools" id="stripTools" hidden>
+            <label>STRIP LAYOUT <select id="stripTemplate"><option value="classic">Classic vertical</option><option value="spaced">Wide spacing</option><option value="compact">Compact strip</option></select></label>
+            <span>Use the arrows to reorder frames.</span>
+          </div>
+        </div>
+        <aside class="editor">
+          <div class="editor-section">
+            <h3>Film look</h3>
+            <label for="filter">FILTER</label>
+            <select id="filter"><option value="none">Original</option><option value="bw">Black &amp; white</option><option value="sepia">Sepia</option><option value="faded">Faded film</option><option value="warm">Warm</option><option value="cool">Cool</option><option value="retro">Retro</option><option value="washed">Washed-out</option></select>
+            <div class="range-control"><label for="brightness">Brightness <output id="brightnessOut">100%</output></label><input id="brightness" type="range" min="50" max="150" value="100"></div>
+            <div class="range-control"><label for="contrast">Contrast <output id="contrastOut">100%</output></label><input id="contrast" type="range" min="50" max="160" value="100"></div>
+            <div class="range-control"><label for="saturation">Saturation <output id="saturationOut">100%</output></label><input id="saturation" type="range" min="0" max="180" value="100"></div>
+            <div class="range-control"><label for="grain">Film grain <output id="grainOut">12%</output></label><input id="grain" type="range" min="0" max="50" value="12"></div>
+          </div>
+          <div class="editor-section">
+            <h3>Print details</h3>
+            <div class="two-controls">
+              <div><label for="borderWidth">BORDER</label><input id="borderWidth" type="range" min="0" max="60" value="20"></div>
+              <div><label for="spacing">PHOTO GAP</label><input id="spacing" type="range" min="0" max="35" value="12"></div>
+            </div>
+            <div class="two-controls color-controls">
+              <div><label for="borderColor">BORDER COLOR</label><input id="borderColor" type="color" value="#fffaf0"></div>
+              <div><label for="backgroundColor">BACKGROUND</label><input id="backgroundColor" type="color" value="#e8dfcf"></div>
+            </div>
+            <label for="captionText">CUSTOM TEXT</label><input id="captionText" type="text" maxlength="40" placeholder="A little memory...">
+            <div class="two-controls">
+              <label class="check-label"><input id="dateStamp" type="checkbox"> Add date stamp</label>
+              <label class="check-label"><input id="decorations" type="checkbox"> Add tiny stars</label>
+            </div>
+          </div>
+          <div class="editor-actions">
+            <button class="secondary-button" id="backToCapture" type="button">← Retake</button>
+            <button class="primary-button" id="toDownload" type="button">Looks good <span>→</span></button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="stage-panel" id="downloadStage" hidden>
+      <div class="panel-heading">
+        <div><p class="eyebrow">STEP THREE</p><h2>Ready to keep</h2></div>
+        <span class="live-label">MADE WITH A LITTLE NOSTALGIA</span>
+      </div>
+      <div class="download-layout">
+        <div class="download-preview artboard"><canvas id="finalCanvas"></canvas></div>
+        <div class="download-copy">
+          <p class="eyebrow">YOUR LITTLE MASTERPIECE</p>
+          <h3>That's a keeper.</h3>
+          <p>Your finished photo is ready. Choose a format and save it to your device.</p>
+          <label for="fileFormat">FILE FORMAT</label>
+          <select id="fileFormat"><option value="image/png">PNG · Best quality</option><option value="image/jpeg">JPG · Smaller file</option></select>
+          <button class="primary-button download-button" id="downloadButton" type="button">Download photo <span>↓</span></button>
+          <button class="secondary-button" id="editAgain" type="button">← Back to editing</button>
+          <button class="secondary-button save-memory-button" id="saveToMemories" type="button">Save to Memories ♡</button>
+          <button class="text-button start-over" id="newSession" type="button">Start a new session ↗</button>
+        </div>
+      </div>
+    </section>
+    <footer><span>LITTLE BOOTH © 2026</span><span>NO UPLOADS. JUST MEMORIES.</span></footer>
+  </main>
+  <section class="memories-overlay" id="memoriesOverlay" hidden aria-label="Memories"><div class="memories-panel"><div class="memories-header"><div><p class="eyebrow">YOUR PRIVATE COLLECTION</p><h2>Memories</h2></div><button class="close-memories" id="closeMemories" type="button" aria-label="Close memories">×</button></div><p class="memories-note">Saved on this device only. Nothing is uploaded.</p><div class="memories-grid" id="memoriesGrid"></div><p class="empty-memories" id="emptyMemories">No memories yet. Take a photo and it'll be saved here.</p></div></section>
+  <section class="memory-viewer" id="memoryViewer" hidden><div class="memory-viewer-card"><button class="close-viewer" id="closeViewer" type="button" aria-label="Close preview">×</button><img id="viewerImage" alt="Saved memory"><div class="viewer-info"><span id="viewerDate"></span><div><button class="secondary-button" id="deleteMemory" type="button">Delete</button><button class="primary-button" id="downloadMemory" type="button">Download ↓</button></div></div></div></section>
+  <script src="script.js"></script><script src="pwa.js"></script>
+</body>
+</html>
